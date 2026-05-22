@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Streamtape App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+:root {
+  --bg:#0b0e14;
+  --card:#161b26;
+  --accent:#ff6a00;
+  --muted:#9aa4b2;
+}
+*{box-sizing:border-box;font-family:system-ui}
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#1b2233,var(--bg));
+  color:#fff;
+}
+header{
+  padding:15px 20px;
+  background:linear-gradient(135deg,#ff6a00,#ff9500);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+header h1{margin:0;font-size:22px}
+header button{
+  background:rgba(0,0,0,.25);
+  border:none;
+  color:white;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+#topbar{
+  padding:10px 20px;
+  display:flex;
+  gap:10px;
+}
+#search{
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  outline:none;
+}
+#breadcrumb{
+  padding:5px 20px;
+  font-size:13px;
+  color:var(--muted);
+}
+.grid{
+  padding:20px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:18px;
+}
+.card{
+  background:linear-gradient(135deg,#1d2435,#121722);
+  border-radius:16px;
+  padding:15px;
+  cursor:pointer;
+  transition:.25s;
+  position:relative;
+}
+.card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 20px 40px rgba(0,0,0,.6);
+}
+.thumb{
+  height:90px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#2b3448,#151a28);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  margin-bottom:10px;
+}
+.folder .thumb{color:#4dabf7}
+.file .thumb{color:#ff9800}
+.card span{
+  font-size:14px;
+  word-break:break-word;
+}
+
+/* Modal */
+#modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.9);
+  z-index:999;
+}
+#modalContent{
+  width:92%;
+  max-width:960px;
+  margin:4% auto;
+  position:relative;
+}
+#modal iframe{
+  width:100%;
+  height:520px;
+  border-radius:16px;
+  border:none;
+}
+#close{
+  position:absolute;
+  top:-40px;
+  right:0;
+  font-size:32px;
+  cursor:pointer;
+}
+
+/* Section title */
+.section{
+  grid-column:1/-1;
+  color:#ffb36a;
+  font-weight:bold;
+  margin-bottom:5px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1><i class="fa-solid fa-film"></i> Streamtape</h1>
+  <button onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></button>
+</header>
+
+<div id="topbar">
+  <input id="search" placeholder="Search movies, series, episodes...">
+</div>
+
+<div id="breadcrumb">Root</div>
+<div id="grid" class="grid"></div>
+
+<div id="modal">
+  <div id="modalContent">
+    <div id="close">&times;</div>
+    <iframe id="player" allowfullscreen></iframe>
+  </div>
+</div>
+
+<script>
+const API_BASE="https://api.streamtape.com";
+const LOGIN="59c9ff4e215e028a72c1";
+const KEY="yGmBb69ewXH14vG";
+
+const grid=document.getElementById("grid");
+const searchInput=document.getElementById("search");
+const breadcrumb=document.getElementById("breadcrumb");
+const modal=document.getElementById("modal");
+const player=document.getElementById("player");
+
+let historyStack=[];
+let currentItems=[];
+
+/* ---------- Helpers ---------- */
+
+function getVideoId(file){
+  if(file.id) return file.id;
+  if(file.link){
+    const m=file.link.match(/\/[ve]\/([a-zA-Z0-9]+)/);
+    if(m) return m[1];
+  }
+  return null;
+}
+
+function saveResume(file){
+  localStorage.setItem("resume",JSON.stringify({
+    name:file.name,
+    id:getVideoId(file)
+  }));
+}
+
+function showResume(){
+  const r=JSON.parse(localStorage.getItem("resume")||"null");
+  if(!r) return;
+  const card=document.createElement("div");
+  card.className="card file";
+  card.innerHTML=`
+    <div class="thumb"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    <span>Continue: ${r.name}</span>`;
+  card.onclick=()=>openPlayer(r.id);
+  grid.appendChild(card);
+}
+
+function openPlayer(id){
+  modal.style.display="block";
+  player.src=`https://streamtape.com/e/${id}`;
+}
+
+document.getElementById("close").onclick=()=>{
+  modal.style.display="none";
+  player.src="";
+};
+
+/* ---------- Episode Grouping ---------- */
+function groupEpisodes(files){
+  const map={};
+  files.forEach(f=>{
+    const m=f.name.match(/(.+?)(S\d+E\d+|\d+x\d+|Episode\s?\d+)/i);
+    if(m){
+      const key=m[1].trim();
+      map[key]=map[key]||[];
+      map[key].push(f);
+    }else{
+      map[f.name]=[f];
+    }
+  });
+  return map;
+}
+
+/* ---------- Load Folder ---------- */
+async function loadFolder(folderId=null,push=true){
+  if(push) historyStack.push(folderId);
+  breadcrumb.textContent=folderId?`Folder ID: ${folderId}`:"Root";
+  grid.innerHTML="Loading...";
+
+  let url=`${API_BASE}/file/listfolder?login=${LOGIN}&key=${KEY}`;
+  if(folderId) url+=`&folder=${folderId}`;
+
+  const res=await fetch(url);
+  const data=await res.json();
+  if(!data.result){grid.innerHTML="Error";return;}
+
+  currentItems=[...(data.result.folders||[]),...(data.result.files||[])];
+  render(data.result.folders||[],data.result.files||[]);
+}
+
+function render(folders,files){
+  grid.innerHTML="";
+  showResume();
+
+  folders.forEach(f=>{
+    const c=document.createElement("div");
+    c.className="card folder";
+    c.innerHTML=`<div class="thumb"><i class="fa-solid fa-folder"></i></div><span>${f.name}</span>`;
+    c.onclick=()=>loadFolder(f.id);
+    grid.appendChild(c);
+  });
+
+  const grouped=groupEpisodes(files);
+  for(const series in grouped){
+    if(grouped[series].length>1){
+      const t=document.createElement("div");
+      t.className="section";
+      t.textContent=series;
+      grid.appendChild(t);
+    }
+    grouped[series].forEach(file=>{
+      const c=document.createElement("div");
+      c.className="card file";
+      c.innerHTML=`<div class="thumb"><i class="fa-solid fa-play"></i></div><span>${file.name}</span>`;
+      c.onclick=()=>{
+        saveResume(file);
+        openPlayer(getVideoId(file));
+      };
+      grid.appendChild(c);
+    });
+  }
+}
+
+/* ---------- Search ---------- */
+searchInput.oninput=()=>{
+  const q=searchInput.value.toLowerCase();
+  const filtered=currentItems.filter(i=>i.name.toLowerCase().includes(q));
+  render(filtered.filter(i=>i.id),filtered.filter(i=>i.link));
+};
+
+/* ---------- Back ---------- */
+function goBack(){
+  if(historyStack.length>1){
+    historyStack.pop();
+    loadFolder(historyStack.pop(),false);
+  }
+}
+
+loadFolder();
+</script>
+
+</body>
+</html>
