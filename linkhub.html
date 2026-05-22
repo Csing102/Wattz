@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LinkHub - Personal Link Aggregator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+:root {
+  --bg:#0b0e14;
+  --card:#161b26;
+  --accent:#ff6a00;
+  --accent-light:#ff9500;
+  --muted:#9aa4b2;
+  --success:#51cf66;
+  --danger:#ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1b2233, var(--bg));
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* Header */
+header {
+  padding: 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,.3);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+header .controls {
+  display: flex;
+  gap: 10px;
+}
+
+header button {
+  background: rgba(0,0,0,.25);
+  border: none;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+header button:hover {
+  background: rgba(0,0,0,.4);
+  transform: scale(1.05);
+}
+
+/* Profile Section */
+.profile {
+  padding: 30px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #1d2435, #121722);
+  border-bottom: 2px solid var(--accent);
+}
+
+.profile-pic {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 50px;
+  margin: 0 auto 15px;
+  border: 3px solid var(--accent);
+}
+
+.profile h2 {
+  margin: 10px 0;
+  font-size: 28px;
+}
+
+.profile p {
+  margin: 8px 0;
+  color: var(--muted);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.profile .stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 15px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Search & Filter */
+.topbar {
+  padding: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--card);
+}
+
+#search {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: #0b0e14;
+  color: #fff;
+  outline: none;
+  transition: 0.2s;
+}
+
+#search:focus {
+  border-color: var(--accent);
+  background: linear-gradient(#0b0e14, #0b0e14) padding-box;
+}
+
+.filter-btn {
+  padding: 10px 15px;
+  border: 2px solid var(--muted);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Grid */
+.grid {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Link Cards */
+.card {
+  background: linear-gradient(135deg, #1d2435, #121722);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: 0.25s;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(255, 106, 0, 0.3);
+  border-color: var(--accent);
+}
+
+.card-thumbnail {
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, #2b3448, #151a28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-body {
+  padding: 15px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #fff;
+  word-break: break-word;
+}
+
+.card-description {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.card-category {
+  display: inline-block;
+  background: rgba(255, 106, 0, 0.2);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.card-footer {
+  display: flex;
+  gap: 8px;
+}
+
+.card-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.visit-btn {
+  background: var(--accent);
+  color: #fff;
+  flex: 2;
+}
+
+.visit-btn:hover {
+  background: var(--accent-light);
+}
+
+.action-btn {
+  background: var(--card);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.action-btn:hover {
+  background: rgba(255, 106, 0, 0.1);
+}
+
+/* Modal */
+#modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.95);
+  z-index: 999;
+  overflow-y: auto;
+}
+
+#modalContent {
+  width: 90%;
+  max-width: 600px;
+  margin: 5% auto;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 30px;
+  position: relative;
+}
+
+#close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 32px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+#close:hover {
+  color: var(--accent);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #2b3448;
+  border-radius: 8px;
+  background: #0b0e14;
+  color: #fff;
+  font-family: inherit;
+  outline: none;
+  transition: 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--accent);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.btn-save {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-save:hover {
+  background: var(--accent-light);
+}
+
+.btn-cancel {
+  background: var(--card);
+  color: var(--muted);
+  border: 1px solid var(--muted);
+}
+
+.btn-cancel:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+
+.empty-state i {
+  font-size: 64px;
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.empty-state h3 {
+  margin: 20px 0;
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--success);
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 8px;
+  display: none;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.error {
+  background: var(--danger);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+  }
+  
+  header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  #modalContent {
+    width: 95%;
+    margin: 10% auto;
+  }
+  
+  .profile .stats {
+    gap: 20px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1><i class="fa-solid fa-link"></i> LinkHub</h1>
+  <div class="controls">
+    <button onclick="openAddModal()" title="Add Link">
+      <i class="fa-solid fa-plus"></i> Add Link
+    </button>
+    <button onclick="downloadData()" title="Export">
+      <i class="fa-solid fa-download"></i>
+    </button>
+    <button onclick="goBack()" title="Back">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+  </div>
+</header>
+
+<div class="profile">
+  <div class="profile-pic" id="profilePic">👤</div>
+  <h2 id="profileName">My Links</h2>
+  <p id="profileBio">Organize all your favorite websites in one place</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value" id="linkCount">0</div>
+      <div class="stat-label">Links</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="categoryCount">0</div>
+      <div class="stat-label">Categories</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="visitCount">0</div>
+      <div class="stat-label">Visits</div>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <input id="search" placeholder="Search links...">
+  <button class="filter-btn active" onclick="filterCategory('all')">All</button>
+  <button class="filter-btn" onclick="filterCategory('work')">Work</button>
+  <button class="filter-btn" onclick="filterCategory('social')">Social</button>
+  <button class="filter-btn" onclick="filterCategory('entertainment')">Entertainment</button>
+  <button class="filter-btn" onclick="filterCategory('tools')">Tools</button>
+  <button class="filter-btn" onclick="filterCategory('other')">Other</button>
+</div>
+
+<div id="grid" class="grid"></div>
+
+<!-- Modal for Adding/Editing Links -->
+<div id="modal">
+  <div id="modalContent">
+    <div id="close" onclick="closeModal()">&times;</div>
+    <h2 id="modalTitle">Add New Link</h2>
+    
+    <form id="linkForm">
+      <div class="form-group">
+        <label for="linkTitle">Title *</label>
+        <input type="text" id="linkTitle" placeholder="e.g., GitHub" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="linkUrl">URL *</label>
+        <input type="url" id="linkUrl" placeholder="https://example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="linkDescription">Description</label>
+        <textarea id="linkDescription" placeholder="Brief description of the link..."></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="linkCategory">Category</label>
+        <select id="linkCategory">
+          <option value="work">Work</option>
+          <option value="social">Social</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="tools">Tools</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="linkIcon">Icon (emoji or URL)</label>
+        <input type="text" id="linkIcon" placeholder="😎 or https://example.com/icon.png">
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn-save">Save Link</button>
+        <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast"></div>
+
+<script>
+// Initialize LocalStorage
+const STORAGE_KEY = "linkhub_data";
+let currentFilter = "all";
+let editingIndex = -1;
+
+// Sample data
+const defaultData = {
+  profile: {
+    name: "My Links",
+    bio: "Organize all your favorite websites in one place",
+    icon: "👤",
+    totalVisits: 0
+  },
+  links: [
+    {
+      title: "GitHub",
+      url: "https://github.com",
+      description: "Where the world builds software",
+      category: "work",
+      icon: "💻",
+      visits: 0,
+      dateAdded: new Date().toISOString()
+    },
+    {
+      title: "YouTube",
+      url: "https://youtube.com",
+      description: "Watch, share, and discover videos",
+      category: "entertainment",
+      icon: "▶️",
+      visits: 0,
+      dateAdded: new Date().toISOString()
+    }
+  ]
+};
+
+// Load data
+function loadData() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored ? JSON.parse(stored) : defaultData;
+}
+
+// Save data
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// Initialize
+let appData = loadData();
+
+// Update profile display
+function updateProfile() {
+  document.getElementById("profileName").textContent = appData.profile.name;
+  document.getElementById("profileBio").textContent = appData.profile.bio;
+  document.getElementById("profilePic").textContent = appData.profile.icon;
+  document.getElementById("linkCount").textContent = appData.links.length;
+  document.getElementById("visitCount").textContent = appData.profile.totalVisits;
+  
+  const categories = new Set(appData.links.map(l => l.category));
+  document.getElementById("categoryCount").textContent = categories.size;
+}
+
+// Create card HTML
+function createCard(link, index) {
+  const iconContent = link.icon.startsWith('http') 
+    ? `<img src="${link.icon}" alt="${link.title}">` 
+    : link.icon;
+  
+  return `
+    <div class="card" data-category="${link.category}">
+      <div class="card-thumbnail">${iconContent}</div>
+      <div class="card-body">
+        <div class="card-title">${escapeHtml(link.title)}</div>
+        <div class="card-description">${escapeHtml(link.description)}</div>
+        <div class="card-meta">
+          <span class="card-category">${link.category}</span>
+          <span>${link.visits} visits</span>
+        </div>
+        <div class="card-footer">
+          <button class="card-btn visit-btn" onclick="visitLink(${index})">
+            <i class="fa-solid fa-arrow-up-right"></i> Visit
+          </button>
+          <button class="card-btn action-btn" onclick="editLink(${index})" title="Edit">
+            <i class="fa-solid fa-edit"></i>
+          </button>
+          <button class="card-btn action-btn" onclick="deleteLink(${index})" title="Delete">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Render grid
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  const searchQuery = document.getElementById("search").value.toLowerCase();
+  
+  const filtered = appData.links.filter(link => {
+    const matchesFilter = currentFilter === "all" || link.category === currentFilter;
+    const matchesSearch = link.title.toLowerCase().includes(searchQuery) || 
+                         link.description.toLowerCase().includes(searchQuery);
+    return matchesFilter && matchesSearch;
+  });
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1;">
+        <div class="empty-state">
+          <i class="fa-solid fa-inbox"></i>
+          <h3>No links found</h3>
+          <p>Try adjusting your search or filters</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  grid.innerHTML = filtered.map((link, i) => {
+    const actualIndex = appData.links.indexOf(link);
+    return createCard(link, actualIndex);
+  }).join("");
+}
+
+// Visit link
+function visitLink(index) {
+  appData.links[index].visits++;
+  appData.profile.totalVisits++;
+  saveData(appData);
+  updateProfile();
+  window.open(appData.links[index].url, "_blank");
+  showToast(`Opened: ${appData.links[index].title}`);
+}
+
+// Edit link
+function editLink(index) {
+  const link = appData.links[index];
+  document.getElementById("modalTitle").textContent = "Edit Link";
+  document.getElementById("linkTitle").value = link.title;
+  document.getElementById("linkUrl").value = link.url;
+  document.getElementById("linkDescription").value = link.description;
+  document.getElementById("linkCategory").value = link.category;
+  document.getElementById("linkIcon").value = link.icon;
+  editingIndex = index;
+  document.getElementById("modal").style.display = "block";
+}
+
+// Delete link
+function deleteLink(index) {
+  if (confirm(`Delete "${appData.links[index].title}"?`)) {
+    appData.links.splice(index, 1);
+    saveData(appData);
+    updateProfile();
+    renderGrid();
+    showToast("Link deleted", "error");
+  }
+}
+
+// Open add modal
+function openAddModal() {
+  document.getElementById("modalTitle").textContent = "Add New Link";
+  document.getElementById("linkForm").reset();
+  document.getElementById("linkCategory").value = "other";
+  editingIndex = -1;
+  document.getElementById("modal").style.display = "block";
+}
+
+// Close modal
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  editingIndex = -1;
+}
+
+// Handle form submission
+document.getElementById("linkForm").onsubmit = (e) => {
+  e.preventDefault();
+  
+  const newLink = {
+    title: document.getElementById("linkTitle").value,
+    url: document.getElementById("linkUrl").value,
+    description: document.getElementById("linkDescription").value,
+    category: document.getElementById("linkCategory").value,
+    icon: document.getElementById("linkIcon").value || "🔗",
+    visits: editingIndex >= 0 ? appData.links[editingIndex].visits : 0,
+    dateAdded: editingIndex >= 0 ? appData.links[editingIndex].dateAdded : new Date().toISOString()
+  };
+  
+  if (editingIndex >= 0) {
+    appData.links[editingIndex] = newLink;
+    showToast("Link updated!");
+  } else {
+    appData.links.push(newLink);
+    showToast("Link added!");
+  }
+  
+  saveData(appData);
+  updateProfile();
+  renderGrid();
+  closeModal();
+};
+
+// Filter by category
+function filterCategory(category) {
+  currentFilter = category;
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.classList.remove("active");
+  });
+  event.target.classList.add("active");
+  renderGrid();
+}
+
+// Search functionality
+document.getElementById("search").oninput = renderGrid;
+
+// Download data
+function downloadData() {
+  const dataStr = JSON.stringify(appData, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "linkhub-backup.json";
+  a.click();
+  showToast("Data exported!");
+}
+
+// Go back
+function goBack() {
+  if (confirm("Go back?")) {
+    history.back();
+  }
+}
+
+// Show toast
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = `toast ${type}`;
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 3000);
+}
+
+// Escape HTML
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Close modal on outside click
+document.getElementById("modal").onclick = (e) => {
+  if (e.target.id === "modal") closeModal();
+};
+
+// Initialize app
+updateProfile();
+renderGrid();
+</script>
+
+</body>
+</html>
