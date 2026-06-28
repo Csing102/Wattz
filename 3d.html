@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Car Edit Camera Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        /* Subtitle watermark to match the vibe */
+        #ui-overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 14px;
+            opacity: 0.7;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        /* Quick Loading Screen */
+        #loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 18px;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+    <!-- Import maps polyfill -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+</head>
+<body>
+
+    <div id="loader">LOADING ASSETS...</div>
+    <div id="canvas-container"></div>
+    <div id="ui-overlay">// BEAT DROP EDIT //</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // --- Setup Scene, Camera, & Renderer ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x050505, 0.05); // Adds mood/depth
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const overheadLight = new THREE.DirectionalLight(0xffffff, 4.0);
+        overheadLight.position.set(0, 10, 2);
+        scene.add(overheadLight);
+
+        const rimLight = new THREE.DirectionalLight(0x00aaff, 3.0); // Electric blue neon rim accent
+        rimLight.position.set(-8, 3, -5);
+        scene.add(rimLight);
+
+        const fillLight = new THREE.DirectionalLight(0xff0055, 1.5); // Soft hot pink/red contrast light
+        fillLight.position.set(8, 1, 5);
+        scene.add(fillLight);
+
+        // --- Ground Grid for Speed/Perspective Reference ---
+        const gridHelper = new THREE.GridHelper(40, 40, 0x222222, 0x111111);
+        gridHelper.position.y = -0.01; 
+        scene.add(gridHelper);
+
+        // --- Load the Car Asset ---
+        const loader = new GLTFLoader();
+        const modelUrl = 'https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf';
+        let carModel = null;
+        const carTarget = new THREE.Vector3(0, 0.4, 0); // Camera focal pivot center
+
+        loader.load(modelUrl, (gltf) => {
+            carModel = gltf.scene;
+            
+            // Auto centering mechanics
+            const box = new THREE.Box3().setFromObject(carModel);
+            const center = box.getCenter(new THREE.Vector3());
+            carModel.position.sub(center); 
+            
+            // Apply subtle floor shadow behavior if model parts allow
+            carModel.traverse((node) => {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
+
+            scene.add(carModel);
+            
+            // Remove Loading Screen
+            const loaderDiv = document.getElementById('loader');
+            loaderDiv.style.opacity = 0;
+            setTimeout(() => loaderDiv.remove(), 500);
+
+        }, undefined, (error) => {
+            console.error('An error happened while loading the model:', error);
+            document.getElementById('loader').innerText = "Failed to load model asset. Check CORS/Network.";
+        });
+
+        // --- Animation Settings & Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Speed multiplier dictates track BPM timing matching
+            const time = clock.getElapsedTime() * 1.8; 
+            const cycle = time % (Math.PI * 2);
+
+            let radius = 6.0;
+            let targetY = 0.9;
+            let fovShift = 60;
+
+            // 1. Zoom Velocity In (The Beat Drop Transition Window)
+            if (cycle > 3.2 && cycle < 3.6) {
+                const progress = (cycle - 3.2) / 0.4; // Normalized 0 to 1
+                const snapFactor = Math.sin(progress * Math.PI); // Smooth arc scale
+                
+                radius = THREE.MathUtils.lerp(6.0, 2.5, snapFactor);
+                targetY = THREE.MathUtils.lerp(0.9, 0.3, snapFactor);
+                fovShift = THREE.MathUtils.lerp(60, 45, snapFactor); // Zoom compress effect
+            } 
+            // 2. High Frequency Camera Shake Immediately Following Drop
+            else if (cycle >= 3.6 && cycle < 4.0) {
+                const decay = 1.0 - ((cycle - 3.6) / 0.4);
+                radius = 6.0 + (Math.sin(time * 70) * 0.08 * decay); // Decaying screen shake
+            }
+
+            // Continuous circling paths around the car coordinates
+            camera.position.x = Math.sin(time * 0.4) * radius;
+            camera.position.z = Math.cos(time * 0.4) * radius;
+            camera.position.y = targetY + Math.sin(time * 0.8) * 0.2; // Minor handheld style hover drift
+
+            // Update projection elements dynamically
+            camera.fov = fovShift;
+            camera.updateProjectionMatrix();
+
+            // Focus lock frame
+            camera.lookAt(carTarget);
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Handle Screen Resizing Safely ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
