@@ -3405,55 +3405,55 @@
   ],
   "images": [
     {
-      "uri": "textures/CASPITAspoiler_baseColor.png"
+      "uri": "CASPITAspoiler_baseColor.png"
     },
     {
-      "uri": "textures/JiottoCHRM_tex1_baseColor.jpeg"
+      "uri": "JiottoCHRM_tex1_baseColor.jpeg"
     },
     {
-      "uri": "textures/LOGOhood_tex2_baseColor.jpeg"
+      "uri": "LOGOhood_tex2_baseColor.jpeg"
     },
     {
-      "uri": "textures/REDFRONTPLandspoilers_pl_tex5_baseColor.jpeg"
+      "uri": "REDFRONTPLandspoilers_pl_tex5_baseColor.jpeg"
     },
     {
-      "uri": "textures/bolts_baseColor.jpeg"
+      "uri": "bolts_baseColor.jpeg"
     },
     {
-      "uri": "textures/bottom_baseColor.jpeg"
+      "uri": "bottom_baseColor.jpeg"
     },
     {
-      "uri": "textures/carbon_baseColor.jpeg"
+      "uri": "carbon_baseColor.jpeg"
     },
     {
-      "uri": "textures/emb_L_baseColor.jpeg"
+      "uri": "emb_L_baseColor.jpeg"
     },
     {
-      "uri": "textures/grill_2_emissive.png"
+      "uri": "grill_2_emissive.png"
     },
     {
-      "uri": "textures/grill_tex3_baseColor.jpeg"
+      "uri": "grill_tex3_baseColor.jpeg"
     },
     {
-      "uri": "textures/headlight_glass_baseColor.png"
+      "uri": "headlight_glass_baseColor.png"
     },
     {
-      "uri": "textures/material_baseColor.jpeg"
+      "uri": "material_baseColor.jpeg"
     },
     {
-      "uri": "textures/kvrrem_tex4_baseColor.jpeg"
+      "uri": "kvrrem_tex4_baseColor.jpeg"
     },
     {
-      "uri": "textures/plate_baseColor.jpeg"
+      "uri": "plate_baseColor.jpeg"
     },
     {
-      "uri": "textures/tire_baseColor.jpeg"
+      "uri": "tire_baseColor.jpeg"
     },
     {
-      "uri": "textures/material_58_baseColor.png"
+      "uri": "material_58_baseColor.png"
     },
     {
-      "uri": "textures/material_59_baseColor.png"
+      "uri": "material_59_baseColor.png"
     }
   ],
   "materials": [
