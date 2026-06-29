@@ -3,36 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cinematic Camera Keyframe Studio</title>
+    <title>3D Cinematic Animation Studio</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background: #fff; font-family: -apple-system, system-ui, sans-serif; color: #111; }
-        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: -apple-system, system-ui, sans-serif; color: #e0e0e0; }
         
-        /* Studio UI Layout */
-        #editor-panel { position: absolute; left: 20px; top: 20px; width: 340px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border: 1px solid #ddd; border-radius: 12px; padding: 20px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        #app-layout { display: flex; width: 100vw; height: 100vh; flex-direction: column; }
+        #workspace { display: flex; flex: 1; min-height: 0; position: relative; }
+        #canvas-container { flex: 1; height: 100%; background: #000; position: relative; }
         
-        .control-group { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-        label { font-size: 12px; font-weight: 600; color: #555; }
-        input[type="number"], input[type="range"] { width: 180px; }
-        input[type="number"] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
+        /* Glassmorphism Sidebar panels */
+        #sidebar { width: 340px; background: #252526; border-right: 1px solid #3c3c3c; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; border-bottom: 1px solid #3c3c3c; padding-bottom: 6px; margin-bottom: 10px; }
         
-        .btn-row { display: flex; gap: 8px; margin-top: 15px; }
-        button { flex: 1; padding: 8px; background: #111; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #333; }
-        button.secondary { background: #eee; color: #111; border: 1px solid #ccc; }
-        button.secondary:hover { background: #ddd; }
+        .panel-section { background: #1e1e1e; padding: 12px; border-radius: 6px; border: 1px solid #333; }
+        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+        .control-row:last-child { margin-bottom: 0; }
         
-        /* Timeline and Graph Dock */
-        #timeline-dock { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 180px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border: 1px solid #ddd; border-radius: 12px; padding: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        .timeline-slider-row { display: flex; align-items: center; gap: 15px; }
-        #time-slider { flex: 1; accent-color: #111; }
-        #graph-canvas { width: 100%; height: 100px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
+        input, select, button { background: #333; color: #fff; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; font-size: 12px; }
+        input[type="number"] { width: 70px; }
+        input[type="range"] { width: 120px; accent-color: #007acc; }
+        select, input[type="text"] { width: 180px; }
+        button { background: #007acc; border: none; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        button:hover { background: #0098ff; }
+        button.secondary { background: #444; }
+        button.secondary:hover { background: #555; }
+        button.danger { background: #a93226; }
+        button.danger:hover { background: #cb4335; }
         
-        #keyframe-list { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; }
-        .kf-tag { padding: 4px 8px; background: #e0e0e0; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
-        .kf-tag.active { background: #111; color: #fff; }
+        /* Timeline Dock Styles */
+        #timeline-dock { height: 140px; background: #252526; border-top: 1px solid #3c3c3c; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        #timeline-track-container { position: relative; width: 100%; height: 40px; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 4px; cursor: pointer; }
+        #timeline-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #007acc; pointer-events: none; }
+        .kf-marker { position: absolute; top: 50%; width: 10px; height: 10px; background: #ffcc00; transform: translate(-50%, -50%) rotate(45deg); border: 1px solid #111; cursor: pointer; }
+        .kf-marker.active { background: #00ffff; box-shadow: 0 0 8px #00ffff; }
+        
+        .timeline-bar-actions { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+        .flex-gap { display: flex; gap: 8px; }
+        
+        /* Overlay UI Utilities */
+        #view-badge { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: 1px; border: 1px solid #444; pointer-events: none; z-index: 5; }
+        #gizmo-hint { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.7); padding: 6px 12px; border-radius: 4px; font-size: 11px; color: #aaa; z-index: 5; border: 1px solid #444; }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -46,322 +57,344 @@
 </head>
 <body>
 
-    <div id="canvas-container"></div>
+    <div id="app-layout">
+        <div id="workspace">
+            <div id="sidebar">
+                <div class="panel-section">
+                    <h3>Asset URL Loader</h3>
+                    <div class="control-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+                        <input type="text" id="asset-url" value="https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf" placeholder="Paste .gltf/.glb link...">
+                        <button id="btn-load-asset">Load Model</button>
+                    </div>
+                </div>
 
-    <div id="editor-panel">
-        <h3>Camera Transform</h3>
-        <div class="control-group">
-            <label>Pos X (Lateral)</label>
-            <input type="number" id="posX" step="0.1" value="0">
-        </div>
-        <div class="control-group">
-            <label>Pos Y (Height)</label>
-            <input type="number" id="posY" step="0.1" value="2">
-        </div>
-        <div class="control-group">
-            <label>Pos Z (Long.)</label>
-            <input type="number" id="posZ" step="0.1" value="6">
-        </div>
-        <div class="control-group">
-            <label>FOV Scale (Zoom)</label>
-            <input type="number" id="camFOV" step="1" value="50" min="15" max="100">
-        </div>
-        <div class="btn-row">
-            <button id="btn-add">Add / Update KF</button>
-            <button id="btn-del" class="secondary">Delete KF</button>
-        </div>
-        <div class="btn-row">
-            <button id="btn-play">Play Sequence</button>
-        </div>
-        <div style="margin-top:15px;">
-            <label style="display:block; margin-bottom:5px;">Saved Keyframes:</label>
-            <div id="keyframe-list"></div>
-        </div>
-    </div>
+                <div class="panel-section">
+                    <h3>Viewport Architecture</h3>
+                    <div class="control-row">
+                        <label>Camera View</label>
+                        <select id="select-view">
+                            <option value="freeroam">Free Roam Editor View</option>
+                            <option value="cinematic">Jump Into Cinematic Camera</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Blender Gizmo Target</label>
+                        <select id="select-gizmo-target">
+                            <option value="camera">Cinematic Camera Object</option>
+                            <option value="model">Loaded Car Model Mesh</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Gizmo Mode</label>
+                        <select id="select-gizmo-mode">
+                            <option value="translate">Move (G)</option>
+                            <option value="rotate">Rotate (R)</option>
+                            <option value="scale">Scale (S)</option>
+                        </select>
+                    </div>
+                </div>
 
-    <div id="timeline-dock">
-        <div class="timeline-slider-row">
-            <label id="time-label">Time: 0.00s</label>
-            <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
+                <div class="panel-section">
+                    <h3>Studio Lighting Config</h3>
+                    <div class="control-row">
+                        <label>Studio Brightness</label>
+                        <input type="range" id="light-intensity" min="0" max="6" step="0.1" value="3">
+                    </div>
+                    <div class="control-row">
+                        <label>Rim Light Accent</label>
+                        <input type="color" id="light-color" value="#ffffff">
+                    </div>
+                    <div class="control-row">
+                        <label>Studio Background</label>
+                        <input type="color" id="bg-color" value="#ffffff">
+                    </div>
+                </div>
+            </div>
+
+            <div id="canvas-container">
+                <div id="view-badge">VIEW: FREE ROAM</div>
+                <div id="gizmo-hint">Gizmo hotkeys: W (Move) | E (Rotate) | R (Scale) | Q (Detach)</div>
+            </div>
         </div>
-        <canvas id="graph-canvas"></canvas>
+
+        <div id="timeline-dock">
+            <div class="timeline-bar-actions">
+                <div class="flex-gap" style="align-items:center;">
+                    <button id="btn-toggle-play">Play</button>
+                    <span id="label-time-counter" style="font-variant-numeric: tabular-nums; font-weight:bold;">Frame: 0.0s / 10.0s</span>
+                </div>
+                <div class="flex-gap">
+                    <button id="btn-add-kf" style="background:#28b463;">Add/Edit Keyframe</button>
+                    <button id="btn-del-kf" class="danger">Delete Keyframe</button>
+                </div>
+            </div>
+            <div id="timeline-track-container">
+                <div id="timeline-playhead"></div>
+                </div>
+        </div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // --- Core Engine Setup ---
+        // --- Core Engine Architecture Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
-        scene.fog = new THREE.Fog(0xffffff, 10, 60);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // View 1: The Interactive workspace view editor
+        const freeCam = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+        freeCam.position.set(8, 6, 12);
+
+        // View 2: The actual runtime playback camera object visible inside the room
+        const cinCam = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 500);
+        cinCam.position.set(0, 2, 6);
+        scene.add(cinCam);
+
+        // Visual helper mesh representing the cinema camera in Free Roam mode
+        const camHelper = new THREE.CameraHelper(cinCam);
+        scene.add(camHelper);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- White Room Lighting Architecture ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        // --- Viewport Navigation Controllers ---
+        const orbitControls = new OrbitControls(freeCam, renderer.domElement);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+
+        const transformControls = new TransformControls(freeCam, renderer.domElement);
+        scene.add(transformControls);
+
+        // Prevent OrbitControls from interfering when dragging the Blender transformation handle lines
+        transformControls.addEventListener('dragging-changed', (event) => {
+            orbitControls.enabled = !event.value;
+        });
+
+        // --- Environment Lighting Layout ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const softOverhead = new THREE.DirectionalLight(0xffffff, 3.0);
-        softOverhead.position.set(4, 15, 4);
-        softOverhead.castShadow = true;
-        softOverhead.shadow.mapSize.width = 2048;
-        softOverhead.shadow.mapSize.height = 2048;
-        softOverhead.shadow.camera.near = 0.5;
-        softOverhead.shadow.camera.far = 30;
-        const d = 8;
-        softOverhead.shadow.camera.left = -d;
-        softOverhead.shadow.camera.right = d;
-        softOverhead.shadow.camera.top = d;
-        softOverhead.shadow.camera.bottom = -d;
-        softOverhead.shadow.bias = -0.0005;
-        scene.add(softOverhead);
+        const studioLight = new THREE.DirectionalLight(0xffffff, 3.0);
+        studioLight.position.set(5, 15, 5);
+        studioLight.castShadow = true;
+        scene.add(studioLight);
 
-        const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        rimLight.position.set(-6, 4, -6);
-        scene.add(rimLight);
-
-        // Continuous Matte Floor
-        const floorGeo = new THREE.PlaneGeometry(100, 100);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.1 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(100, 100),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })
+        );
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        const grid = new THREE.GridHelper(40, 40, 0xdddddd, 0xeeeeee);
-        grid.position.y = 0.002;
+        const grid = new THREE.GridHelper(50, 50, 0xcccccc, 0xeeeeee);
+        grid.position.y = 0.001;
         scene.add(grid);
 
-        // --- Load Car Asset ---
-        const loader = new GLTFLoader();
-        const carTarget = new THREE.Vector3(0, 0.4, 0); 
+        // --- Model Manager State ---
+        let loadedModel = null;
+        const gltfLoader = new GLTFLoader();
 
-        loader.load('https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf', (gltf) => {
-            const car = gltf.scene;
-            const box = new THREE.Box3().setFromObject(car);
-            const center = box.getCenter(new THREE.Vector3());
-            car.position.set(-center.x, -box.min.y, -center.z); // Snaps wheels accurately to floor plane
-            
-            car.traverse((node) => {
-                if(node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                }
-            });
-            scene.add(car);
-        });
+        function loadModelFromURL(url) {
+            if (loadedModel) scene.remove(loadedModel);
+            gltfLoader.load(url, (gltf) => {
+                loadedModel = gltf.scene;
+                const box = new THREE.Box3().setFromObject(loadedModel);
+                const center = box.getCenter(new THREE.Vector3());
+                loadedModel.position.set(-center.x, -box.min.y, -center.z); // Snaps mesh directly onto ground plane
+                scene.add(loadedModel);
+                
+                // Set default gizmo focus target to the new model mesh
+                document.getElementById('select-gizmo-target').value = "model";
+                transformControls.attach(loadedModel);
+            }, undefined, (err) => alert("Failed to interpret asset model path or format. Confirm CORS configurations."));
+        }
+        // Load initial default asset
+        loadModelFromURL(document.getElementById('asset-url').value);
 
-        // --- Keyframe State Engine ---
-        // Seed default cinematic loop coordinates
+        // --- Unified Keyframe Animation System State ---
         let keyframes = [
-            { t: 0, x: 0, y: 1.5, z: 6, fov: 55 },
-            { t: 25, x: 3, y: 1.0, z: 3, fov: 40 },
-            { t: 50, x: 0, y: 0.8, z: -5, fov: 50 },
-            { t: 75, x: -4, y: 1.8, z: 0, fov: 35 },
-            { t: 100, x: 0, y: 1.5, z: 6, fov: 55 }
+            { time: 0, px: 0, py: 2, pz: 6, rx: 0, ry: 0, rz: 0 },
+            { time: 5, px: 4, py: 1, pz: 3, rx: 0, ry: 1.2, rz: 0 },
+            { time: 10, px: 0, py: 1.5, pz: -5, rx: 0, ry: 3.14, rz: 0 }
         ];
         
+        let currentTime = 0;
+        const maxDuration = 10; // Total track duration bounds (10 seconds)
         let isPlaying = false;
-        let playProgress = 0;
         const clock = new THREE.Clock();
 
-        // UI Selections
-        const uiX = document.getElementById('posX');
-        const uiY = document.getElementById('posY');
-        const uiZ = document.getElementById('posZ');
-        const uiFOV = document.getElementById('camFOV');
-        const timeSlider = document.getElementById('time-slider');
-        const timeLabel = document.getElementById('time-label');
-        const kfListContainer = document.getElementById('keyframe-list');
-        const graphCanvas = document.getElementById('graph-canvas');
-        const gCtx = graphCanvas.getContext('2d');
+        // --- Interactive Timeline Functionality ---
+        const trackContainer = document.getElementById('timeline-track-container');
+        const playhead = document.getElementById('timeline-playhead');
 
-        // Resize Canvas Elements
-        function resizeGraph() {
-            graphCanvas.width = graphCanvas.parentElement.clientWidth - 30;
-            graphCanvas.height = 100;
-            renderGraph();
+        function setTimelinePosition(time) {
+            currentTime = Math.max(0, Math.min(maxDuration, time));
+            const percentage = (currentTime / maxDuration) * 100;
+            playhead.style.left = `${percentage}%`;
+            document.getElementById('label-time-counter').innerText = `Frame: ${currentTime.toFixed(1)}s / ${maxDuration.toFixed(1)}s`;
+            
+            // Interpolate tracking data properties across timeline parameters if playing or scrubbing
+            const state = evaluateInterpolation(currentTime);
+            if (state) {
+                cinCam.position.set(state.px, state.py, state.pz);
+                cinCam.rotation.set(state.rx, state.ry, state.rz);
+            }
+            renderKeyframeMarkers();
         }
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            resizeGraph();
+
+        trackContainer.addEventListener('mousedown', (e) => {
+            const rect = trackContainer.getBoundingClientRect();
+            const clickPos = (e.clientX - rect.left) / rect.width;
+            setTimelinePosition(clickPos * maxDuration);
         });
-        setTimeout(resizeGraph, 100);
 
-        // --- Math Interpolator (Spline Generation) ---
-        function getInterpolatedState(tValue) {
-            if (keyframes.length === 0) return { x: 0, y: 2, z: 6, fov: 50 };
-            
-            // Sort keys chronologically
-            keyframes.sort((a,b) => a.t - b.t);
-            
-            // Boundary capping
-            if (tValue <= keyframes[0].t) return keyframes[0];
-            if (tValue >= keyframes[keyframes.length - 1].t) return keyframes[keyframes.length - 1];
+        function renderKeyframeMarkers() {
+            // Clear existing timeline markers
+            const currentMarkers = trackContainer.querySelectorAll('.kf-marker');
+            currentMarkers.forEach(m => m.remove());
 
-            // Discover bounding neighbors
+            keyframes.forEach(kf => {
+                const marker = document.createElement('div');
+                marker.className = `kf-marker ${Math.abs(kf.time - currentTime) < 0.05 ? 'active' : ''}`;
+                marker.style.left = `${(kf.time / maxDuration) * 100}%`;
+                
+                marker.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Avoid parsing secondary wrapper click triggers
+                    setTimelinePosition(kf.time);
+                });
+                trackContainer.appendChild(marker);
+            });
+        }
+
+        // --- Hermite Spline Matrix Trajectory Interpolation Math ---
+        function evaluateInterpolation(t) {
+            if (keyframes.length === 0) return null;
+            keyframes.sort((a,b) => a.time - b.time);
+
+            if (t <= keyframes[0].time) return keyframes[0];
+            if (t >= keyframes[keyframes.length - 1].time) return keyframes[keyframes.length - 1];
+
             let i = 0;
-            while (i < keyframes.length - 1 && keyframes[i+1].t < tValue) i++;
+            while (i < keyframes.length - 1 && keyframes[i+1].time < t) i++;
 
             const k1 = keyframes[i];
             const k2 = keyframes[i+1];
-            const alpha = (tValue - k1.t) / (k2.t - k1.t);
-
-            // Use smooth hermite/bezier blend step
-            const p = 3 * Math.pow(alpha, 2) - 2 * Math.pow(alpha, 3);
+            const alpha = (t - k1.time) / (k2.time - k1.time);
+            
+            // Bezier easing factor calculation
+            const smoothStep = alpha * alpha * (3 - 2 * alpha);
 
             return {
-                x: THREE.MathUtils.lerp(k1.x, k2.x, p),
-                y: THREE.MathUtils.lerp(k1.y, k2.y, p),
-                z: THREE.MathUtils.lerp(k1.z, k2.z, p),
-                fov: THREE.MathUtils.lerp(k1.fov, k2.fov, p)
+                px: THREE.MathUtils.lerp(k1.px, k2.px, smoothStep),
+                py: THREE.MathUtils.lerp(k1.py, k2.py, smoothStep),
+                pz: THREE.MathUtils.lerp(k1.pz, k2.pz, smoothStep),
+                rx: THREE.MathUtils.lerp(k1.rx, k2.rx, smoothStep),
+                ry: THREE.MathUtils.lerp(k1.ry, k2.ry, smoothStep),
+                rz: THREE.MathUtils.lerp(k1.rz, k2.rz, smoothStep)
             };
         }
 
-        // --- Transform State Updates ---
-        function updateTimelineFromInputs() {
-            const t = parseFloat(timeSlider.value);
-            const state = getInterpolatedState(t);
-            
-            if (!isPlaying) {
-                camera.position.set(state.x, state.y, state.z);
-                camera.fov = state.fov;
-                camera.updateProjectionMatrix();
-                
-                uiX.value = state.x.toFixed(2);
-                uiY.value = state.y.toFixed(2);
-                uiZ.value = state.z.toFixed(2);
-                uiFOV.value = Math.round(state.fov);
-            }
-            timeLabel.innerText = `Time: ${(t/10).toFixed(2)}s`;
-            renderGraph();
-            updateKeyframeUI();
-        }
+        // --- UI Action Bindings ---
+        document.getElementById('btn-load-asset').addEventListener('click', () => {
+            loadModelFromURL(document.getElementById('asset-url').value);
+        });
 
-        function forceUIValuesToCamera() {
-            if (isPlaying) return;
-            camera.position.set(parseFloat(uiX.value), parseFloat(uiY.value), parseFloat(uiZ.value));
-            camera.fov = parseFloat(uiFOV.value);
-            camera.updateProjectionMatrix();
-        }
-
-        // --- Event Binder Layout ---
-        [uiX, uiY, uiZ, uiFOV].forEach(input => input.addEventListener('input', forceUIValuesToCamera));
-        timeSlider.addEventListener('input', updateTimelineFromInputs);
-
-        document.getElementById('btn-add').addEventListener('click', () => {
-            const currentT = parseFloat(timeSlider.value);
-            // Delete keyframe if it already exists on this frame to overwrite it
-            keyframes = keyframes.filter(k => k.t !== currentT);
-            
+        document.getElementById('btn-add-kf').addEventListener('click', () => {
+            // Overwrite existing keyframe configuration matching current timeline mark
+            keyframes = keyframes.filter(k => Math.abs(k.time - currentTime) > 0.05);
             keyframes.push({
-                t: currentT,
-                x: parseFloat(uiX.value),
-                y: parseFloat(uiY.value),
-                z: parseFloat(uiZ.value),
-                fov: parseFloat(uiFOV.value)
+                time: currentTime,
+                px: cinCam.position.x, py: cinCam.position.y, pz: cinCam.position.z,
+                rx: cinCam.rotation.x, ry: cinCam.rotation.y, rz: cinCam.rotation.z
             });
-            updateTimelineFromInputs();
+            setTimelinePosition(currentTime);
         });
 
-        document.getElementById('btn-del').addEventListener('click', () => {
-            const currentT = parseFloat(timeSlider.value);
-            keyframes = keyframes.filter(k => k.t !== currentT);
-            updateTimelineFromInputs();
+        document.getElementById('btn-del-kf').addEventListener('click', () => {
+            keyframes = keyframes.filter(k => Math.abs(k.time - currentTime) > 0.05);
+            setTimelinePosition(currentTime);
         });
 
-        const btnPlay = document.getElementById('btn-play');
-        btnPlay.addEventListener('click', () => {
+        const playBtn = document.getElementById('btn-toggle-play');
+        playBtn.addEventListener('click', () => {
             isPlaying = !isPlaying;
-            btnPlay.innerText = isPlaying ? "Pause Sequence" : "Play Sequence";
-            if(isPlaying && playProgress >= 100) playProgress = 0;
+            playBtn.innerText = isPlaying ? "Pause" : "Play";
         });
 
-        // --- Render UI Updates ---
-        function updateKeyframeUI() {
-            kfListContainer.innerHTML = '';
-            keyframes.sort((a,b) => a.t - b.t).forEach(kf => {
-                const tag = document.createElement('div');
-                tag.className = `kf-tag ${kf.t === parseFloat(timeSlider.value) ? 'active' : ''}`;
-                tag.innerText = `F:${kf.t}`;
-                tag.addEventListener('click', () => {
-                    timeSlider.value = kf.t;
-                    updateTimelineFromInputs();
-                });
-                kfListContainer.appendChild(tag);
-            });
+        // --- Gizmo Target and View Adjustment Engine ---
+        const viewSelector = document.getElementById('select-view');
+        viewSelector.addEventListener('change', (e) => {
+            const mode = e.target.value;
+            document.getElementById('view-badge').innerText = `VIEW: ${mode.toUpperCase()}`;
+            if(mode === 'cinematic') transformControls.detach(); // Hide editing handles when viewing scene inside camera mode
+        });
+
+        const targetSelector = document.getElementById('select-gizmo-target');
+        function updateGizmoTarget() {
+            if (viewSelector.value === 'cinematic') return;
+            if (targetSelector.value === 'camera') transformControls.attach(cinCam);
+            else if (targetSelector.value === 'model' && loadedModel) transformControls.attach(loadedModel);
         }
+        targetSelector.addEventListener('change', updateGizmoTarget);
+        
+        // Listen to Transform Control operations to synchronize keyframes on interaction
+        transformControls.addEventListener('objectChange', () => {
+            camHelper.update();
+        });
 
-        function renderGraph() {
-            gCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
-            const w = graphCanvas.width;
-            const h = graphCanvas.height;
+        const modeSelector = document.getElementById('select-gizmo-mode');
+        modeSelector.addEventListener('change', (e) => {
+            transformControls.setMode(e.target.value);
+        });
 
-            // Draw center reference horizon line
-            gCtx.strokeStyle = '#eee';
-            gCtx.beginPath(); gCtx.moveTo(0, h/2); gCtx.lineTo(w, h/2); gCtx.stroke();
+        // Keyboard Shortcut Mappings (Matches Blender workflow defaults)
+        window.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'w': transformControls.setMode('translate'); modeSelector.value = 'translate'; break;
+                case 'e': transformControls.setMode('rotate'); modeSelector.value = 'rotate'; break;
+                case 'r': transformControls.setMode('scale'); modeSelector.value = 'scale'; break;
+                case 'q': transformControls.detach(); break;
+            }
+        });
 
-            // Trace spatial curves (normalized coordinate bounds scaling)
-            const drawCurve = (prop, color) => {
-                gCtx.strokeStyle = color;
-                gCtx.beginPath();
-                for (let xPixel = 0; xPixel < w; xPixel++) {
-                    const tVal = (xPixel / w) * 100;
-                    const state = getInterpolatedState(tVal);
-                    const yPixel = (h / 2) - (state[prop] * 8); // Scale multiplier for screen visual fit
-                    if (xPixel === 0) gCtx.moveTo(xPixel, yPixel);
-                    else gCtx.lineTo(xPixel, yPixel);
-                }
-                gCtx.stroke();
-            };
+        // Live Environment Control Binding Setup
+        document.getElementById('light-intensity').addEventListener('input', (e) => studioLight.intensity = parseFloat(e.target.value));
+        document.getElementById('light-color').addEventListener('input', (e) => studioLight.color.set(e.target.value));
+        document.getElementById('bg-color').addEventListener('input', (e) => {
+            scene.background.set(e.target.value);
+            floor.material.color.set(e.target.value);
+        });
 
-            drawCurve('x', '#ff4444');
-            drawCurve('y', '#00c853');
-            drawCurve('z', '#0091ea');
-
-            // Draw current time playhead marker bar
-            const curX = (parseFloat(timeSlider.value) / 100) * w;
-            gCtx.strokeStyle = '#111111';
-            gCtx.lineWidth = 1.5;
-            gCtx.beginPath(); gCtx.moveTo(curX, 0); gCtx.lineTo(curX, h); gCtx.stroke();
-            gCtx.lineWidth = 1;
-        }
-
-        // --- Main Execution Animation Cycle Loop ---
+        // --- Continuous Render Loop execution ---
         function animate() {
             requestAnimationFrame(animate);
-
+            
+            const delta = clock.getDelta();
             if (isPlaying) {
-                playProgress += clock.getDelta() * 12; // Controls playback playback speed rate
-                if (playProgress > 100) playProgress = 0; // Infinite loop sequence
-                
-                timeSlider.value = playProgress;
-                timeLabel.innerText = `Time: ${(playProgress/10).toFixed(2)}s`;
-                
-                const state = getInterpolatedState(playProgress);
-                camera.position.set(state.x, state.y, state.z);
-                camera.fov = state.fov;
-                camera.updateProjectionMatrix();
-                
-                renderGraph();
+                let nextTime = currentTime + delta;
+                if (nextTime > maxDuration) nextTime = 0; // Seamless looping tracking
+                setTimelinePosition(nextTime);
             }
 
-            camera.lookAt(carTarget);
-            renderer.render(scene, camera);
+            orbitControls.update();
+            camHelper.update();
+
+            // Render based on selected camera viewpoint
+            const activeCamera = (viewSelector.value === 'cinematic') ? cinCam : freeCam;
+            renderer.render(scene, activeCamera);
         }
 
-        // Initial setup execution triggers
-        updateTimelineFromInputs();
+        // Initialize display environment values
+        setTimelinePosition(0);
+        updateGizmoTarget();
         animate();
     </script>
 </body>
