@@ -75,131 +75,144 @@
     <div id="ui-overlay">// BEAT DROP EDIT //</div>
 
     <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-        // --- Setup Scene, Camera, & Renderer ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.FogExp2(0x050505, 0.05); // Adds mood/depth
+// 1. Scene Setup: A minimal, stark white room
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff); // Pure white background
+scene.fog = new THREE.Fog(0xffffff, 1, 50); // Optional fog for scale depth
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        container.appendChild(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambientLight);
+// 2. Lighting (Crucial for a "white room")
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Soft overall fill
+scene.add(ambientLight);
 
-        const overheadLight = new THREE.DirectionalLight(0xffffff, 4.0);
-        overheadLight.position.set(0, 10, 2);
-        scene.add(overheadLight);
+// Key light for defining shapes
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+keyLight.position.set(5, 10, 5);
+scene.add(keyLight);
 
-        const rimLight = new THREE.DirectionalLight(0x00aaff, 3.0); // Electric blue neon rim accent
-        rimLight.position.set(-8, 3, -5);
-        scene.add(rimLight);
+// Contre-jour lighting to lift the car off the background
+const backLight = new THREE.DirectionalLight(0xffffff, 1.5);
+backLight.position.set(-5, 5, -5);
+scene.add(backLight);
 
-        const fillLight = new THREE.DirectionalLight(0xff0055, 1.5); // Soft hot pink/red contrast light
-        fillLight.position.set(8, 1, 5);
-        scene.add(fillLight);
+// Visual ground reference (subtle grid)
+const gridHelper = new THREE.GridHelper(30, 30, 0xaaaaaa, 0xdddddd);
+gridHelper.position.y = -0.01; // Slightly below zero to avoid z-fighting
+scene.add(gridHelper);
 
-        // --- Ground Grid for Speed/Perspective Reference ---
-        const gridHelper = new THREE.GridHelper(40, 40, 0x222222, 0x111111);
-        gridHelper.position.y = -0.01; 
-        scene.add(gridHelper);
+// 3. Load Your Car Model (scene.gltf)
+const loader = new GLTFLoader();
+const modelUrl = 'https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf';
+let carModel = null;
+const animationMixer = null;
 
-        // --- Load the Car Asset ---
-        const loader = new GLTFLoader();
-        const modelUrl = 'https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf';
-        let carModel = null;
-        const carTarget = new THREE.Vector3(0, 0.4, 0); // Camera focal pivot center
+loader.load(modelUrl, (gltf) => {
+    carModel = gltf.scene;
 
-        loader.load(modelUrl, (gltf) => {
-            carModel = gltf.scene;
-            
-            // Auto centering mechanics
-            const box = new THREE.Box3().setFromObject(carModel);
-            const center = box.getCenter(new THREE.Vector3());
-            carModel.position.sub(center); 
-            
-            // Apply subtle floor shadow behavior if model parts allow
-            carModel.traverse((node) => {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                }
-            });
-
-            scene.add(carModel);
-            
-            // Remove Loading Screen
-            const loaderDiv = document.getElementById('loader');
-            loaderDiv.style.opacity = 0;
-            setTimeout(() => loaderDiv.remove(), 500);
-
-        }, undefined, (error) => {
-            console.error('An error happened while loading the model:', error);
-            document.getElementById('loader').innerText = "Failed to load model asset. Check CORS/Network.";
-        });
-
-        // --- Animation Settings & Loop ---
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Speed multiplier dictates track BPM timing matching
-            const time = clock.getElapsedTime() * 1.8; 
-            const cycle = time % (Math.PI * 2);
-
-            let radius = 6.0;
-            let targetY = 0.9;
-            let fovShift = 60;
-
-            // 1. Zoom Velocity In (The Beat Drop Transition Window)
-            if (cycle > 3.2 && cycle < 3.6) {
-                const progress = (cycle - 3.2) / 0.4; // Normalized 0 to 1
-                const snapFactor = Math.sin(progress * Math.PI); // Smooth arc scale
-                
-                radius = THREE.MathUtils.lerp(6.0, 2.5, snapFactor);
-                targetY = THREE.MathUtils.lerp(0.9, 0.3, snapFactor);
-                fovShift = THREE.MathUtils.lerp(60, 45, snapFactor); // Zoom compress effect
-            } 
-            // 2. High Frequency Camera Shake Immediately Following Drop
-            else if (cycle >= 3.6 && cycle < 4.0) {
-                const decay = 1.0 - ((cycle - 3.6) / 0.4);
-                radius = 6.0 + (Math.sin(time * 70) * 0.08 * decay); // Decaying screen shake
-            }
-
-            // Continuous circling paths around the car coordinates
-            camera.position.x = Math.sin(time * 0.4) * radius;
-            camera.position.z = Math.cos(time * 0.4) * radius;
-            camera.position.y = targetY + Math.sin(time * 0.8) * 0.2; // Minor handheld style hover drift
-
-            // Update projection elements dynamically
-            camera.fov = fovShift;
-            camera.updateProjectionMatrix();
-
-            // Focus lock frame
-            camera.lookAt(carTarget);
-
-            renderer.render(scene, camera);
+    // A. Setup Shadow Casting (Optional but enhances realism)
+    carModel.traverse((node) => {
+        if (node.isMesh) {
+            node.castShadow = true;
+            node.receiveShadow = true;
         }
+    });
 
-        // --- Handle Screen Resizing Safely ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+    // B. Correct Model Position (Ensure it is on the ground)
+    const box = new THREE.Box3().setFromObject(carModel);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    carModel.position.set(-center.x, -box.min.y, -center.z); // Center horizontally, put bottom at y=0
 
-        animate();
+    scene.add(carModel);
+
+    // C. Define and Initialize the Camera Animation
+    setupCameraAnimation();
+});
+
+// 4. Create the Camera Path Animation Clip
+function setupCameraAnimation() {
+    // Defines *where* the camera is. 
+    // Format: [TimeInSeconds, posX, posY, posZ, TimeInSeconds, posX, posY, posZ, ...]
+    // Times are cumulative.
+    const positionTrack = new THREE.KeyframeTrack('.position', [
+        0.0, 0, 5, 12,    // START: Wide, high angle
+        3.0, 0, 1.5, 4,   // 1. Zoom in: Closer, lower front
+        4.0, 0, 1.0, 2.8, // Hold on Bonnet (slight advance)
+        7.0, -8, 0.8, 1,  // 2. Left Side
+        10.0, 8, 0.8, 1,  // 3. Right Side
+        13.0, 0, 1.2, -6, // 4. Back (centered)
+        16.0, -2, 0.8, -5.5, // 5. Left Back Side
+        19.0, 2, 0.8, -5.5,  // 6. Right Back Side
+        22.0, 0, 5, 12    // LOOP back to start
+    ], [
+        0, 5, 12,
+        0, 1.5, 4,
+        0, 1.0, 2.8,
+        -8, 0.8, 1,
+        8, 0.8, 1,
+        0, 1.2, -6,
+        -2, 0.8, -5.5,
+        2, 0.8, -5.5,
+        0, 5, 12
+    ]);
+
+    // Optional: Defines *what* the camera is looking at. (Smoothing 'LookAt')
+    // Generally, targeting the center of the car works well, so we might just lookAt(0,0,0) constantly,
+    // but a subtle track adds sophistication.
+    const targetTrack = new THREE.KeyframeTrack('.quaternion', [0, 22], [
+        camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w,
+        camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w
+    ]);
+    // NOTE: Generating smooth quaternions for complex paths via Keyframes is difficult.
+    // For this use case, we will rely on `.lookAt()` during the render loop rather than a Quaternion track.
+
+    // Combine tracks into a seamless loop
+    const clip = new THREE.AnimationClip('CarStudioShowcase', 22, [positionTrack]);
+    const mixer = new THREE.AnimationMixer(camera);
+    const action = mixer.clipAction(clip);
+    action.setLoop(THREE.LoopRepeat);
+    action.play();
+
+    // Assign back to the global scope variable so the render loop can access it
+    window.animationMixer = mixer;
+}
+
+// 5. Render Loop
+const clock = new THREE.Clock();
+const carTarget = new THREE.Vector3(0, 0.5, 0); // Focus point (front bumper/hood height)
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (window.animationMixer) {
+        // Update the animation mixer with the time delta
+        window.animationMixer.update(clock.getDelta());
+    }
+
+    // Force the camera to always focus on the same central point, 
+    // smoothing the rotation even as the position track moves wildly.
+    camera.lookAt(carTarget);
+
+    renderer.render(scene, camera);
+}
+
+// Handle Window Resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Start the loop
+animate();
     </script>
 </body>
 </html>
