@@ -3,62 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Car Edit Camera Animation</title>
+    <title>Cinematic Camera Keyframe Studio</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #050505;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        /* Subtitle watermark to match the vibe */
-        #ui-overlay {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ffffff;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-size: 14px;
-            opacity: 0.7;
-            pointer-events: none;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-        /* Quick Loading Screen */
-        #loader {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            font-size: 18px;
-            z-index: 10;
-            transition: opacity 0.5s ease;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #fff; font-family: -apple-system, system-ui, sans-serif; color: #111; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* Studio UI Layout */
+        #editor-panel { position: absolute; left: 20px; top: 20px; width: 340px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border: 1px solid #ddd; border-radius: 12px; padding: 20px; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        
+        .control-group { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        label { font-size: 12px; font-weight: 600; color: #555; }
+        input[type="number"], input[type="range"] { width: 180px; }
+        input[type="number"] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
+        
+        .btn-row { display: flex; gap: 8px; margin-top: 15px; }
+        button { flex: 1; padding: 8px; background: #111; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #333; }
+        button.secondary { background: #eee; color: #111; border: 1px solid #ccc; }
+        button.secondary:hover { background: #ddd; }
+        
+        /* Timeline and Graph Dock */
+        #timeline-dock { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 180px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border: 1px solid #ddd; border-radius: 12px; padding: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .timeline-slider-row { display: flex; align-items: center; gap: 15px; }
+        #time-slider { flex: 1; accent-color: #111; }
+        #graph-canvas { width: 100%; height: 100px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
+        
+        #keyframe-list { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; }
+        .kf-tag { padding: 4px 8px; background: #e0e0e0; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .kf-tag.active { background: #111; color: #fff; }
     </style>
-    <!-- Import maps polyfill -->
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
-
     <script type="importmap">
       {
         "imports": {
@@ -70,149 +46,323 @@
 </head>
 <body>
 
-    <div id="loader">LOADING ASSETS...</div>
     <div id="canvas-container"></div>
-    <div id="ui-overlay">// BEAT DROP EDIT //</div>
+
+    <div id="editor-panel">
+        <h3>Camera Transform</h3>
+        <div class="control-group">
+            <label>Pos X (Lateral)</label>
+            <input type="number" id="posX" step="0.1" value="0">
+        </div>
+        <div class="control-group">
+            <label>Pos Y (Height)</label>
+            <input type="number" id="posY" step="0.1" value="2">
+        </div>
+        <div class="control-group">
+            <label>Pos Z (Long.)</label>
+            <input type="number" id="posZ" step="0.1" value="6">
+        </div>
+        <div class="control-group">
+            <label>FOV Scale (Zoom)</label>
+            <input type="number" id="camFOV" step="1" value="50" min="15" max="100">
+        </div>
+        <div class="btn-row">
+            <button id="btn-add">Add / Update KF</button>
+            <button id="btn-del" class="secondary">Delete KF</button>
+        </div>
+        <div class="btn-row">
+            <button id="btn-play">Play Sequence</button>
+        </div>
+        <div style="margin-top:15px;">
+            <label style="display:block; margin-bottom:5px;">Saved Keyframes:</label>
+            <div id="keyframe-list"></div>
+        </div>
+    </div>
+
+    <div id="timeline-dock">
+        <div class="timeline-slider-row">
+            <label id="time-label">Time: 0.00s</label>
+            <input type="range" id="time-slider" min="0" max="100" value="0" step="1">
+        </div>
+        <canvas id="graph-canvas"></canvas>
+    </div>
 
     <script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// 1. Scene Setup: A minimal, stark white room
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff); // Pure white background
-scene.fog = new THREE.Fog(0xffffff, 1, 50); // Optional fog for scale depth
+        // --- Core Engine Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+        scene.fog = new THREE.Fog(0xffffff, 10, 60);
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-document.body.appendChild(renderer.domElement);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
 
-// 2. Lighting (Crucial for a "white room")
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Soft overall fill
-scene.add(ambientLight);
+        // --- White Room Lighting Architecture ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
 
-// Key light for defining shapes
-const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
-keyLight.position.set(5, 10, 5);
-scene.add(keyLight);
+        const softOverhead = new THREE.DirectionalLight(0xffffff, 3.0);
+        softOverhead.position.set(4, 15, 4);
+        softOverhead.castShadow = true;
+        softOverhead.shadow.mapSize.width = 2048;
+        softOverhead.shadow.mapSize.height = 2048;
+        softOverhead.shadow.camera.near = 0.5;
+        softOverhead.shadow.camera.far = 30;
+        const d = 8;
+        softOverhead.shadow.camera.left = -d;
+        softOverhead.shadow.camera.right = d;
+        softOverhead.shadow.camera.top = d;
+        softOverhead.shadow.camera.bottom = -d;
+        softOverhead.shadow.bias = -0.0005;
+        scene.add(softOverhead);
 
-// Contre-jour lighting to lift the car off the background
-const backLight = new THREE.DirectionalLight(0xffffff, 1.5);
-backLight.position.set(-5, 5, -5);
-scene.add(backLight);
+        const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        rimLight.position.set(-6, 4, -6);
+        scene.add(rimLight);
 
-// Visual ground reference (subtle grid)
-const gridHelper = new THREE.GridHelper(30, 30, 0xaaaaaa, 0xdddddd);
-gridHelper.position.y = -0.01; // Slightly below zero to avoid z-fighting
-scene.add(gridHelper);
+        // Continuous Matte Floor
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.1 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
 
-// 3. Load Your Car Model (scene.gltf)
-const loader = new GLTFLoader();
-const modelUrl = 'https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf';
-let carModel = null;
-const animationMixer = null;
+        const grid = new THREE.GridHelper(40, 40, 0xdddddd, 0xeeeeee);
+        grid.position.y = 0.002;
+        scene.add(grid);
 
-loader.load(modelUrl, (gltf) => {
-    carModel = gltf.scene;
+        // --- Load Car Asset ---
+        const loader = new GLTFLoader();
+        const carTarget = new THREE.Vector3(0, 0.4, 0); 
 
-    // A. Setup Shadow Casting (Optional but enhances realism)
-    carModel.traverse((node) => {
-        if (node.isMesh) {
-            node.castShadow = true;
-            node.receiveShadow = true;
+        loader.load('https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/scene.gltf', (gltf) => {
+            const car = gltf.scene;
+            const box = new THREE.Box3().setFromObject(car);
+            const center = box.getCenter(new THREE.Vector3());
+            car.position.set(-center.x, -box.min.y, -center.z); // Snaps wheels accurately to floor plane
+            
+            car.traverse((node) => {
+                if(node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
+            scene.add(car);
+        });
+
+        // --- Keyframe State Engine ---
+        // Seed default cinematic loop coordinates
+        let keyframes = [
+            { t: 0, x: 0, y: 1.5, z: 6, fov: 55 },
+            { t: 25, x: 3, y: 1.0, z: 3, fov: 40 },
+            { t: 50, x: 0, y: 0.8, z: -5, fov: 50 },
+            { t: 75, x: -4, y: 1.8, z: 0, fov: 35 },
+            { t: 100, x: 0, y: 1.5, z: 6, fov: 55 }
+        ];
+        
+        let isPlaying = false;
+        let playProgress = 0;
+        const clock = new THREE.Clock();
+
+        // UI Selections
+        const uiX = document.getElementById('posX');
+        const uiY = document.getElementById('posY');
+        const uiZ = document.getElementById('posZ');
+        const uiFOV = document.getElementById('camFOV');
+        const timeSlider = document.getElementById('time-slider');
+        const timeLabel = document.getElementById('time-label');
+        const kfListContainer = document.getElementById('keyframe-list');
+        const graphCanvas = document.getElementById('graph-canvas');
+        const gCtx = graphCanvas.getContext('2d');
+
+        // Resize Canvas Elements
+        function resizeGraph() {
+            graphCanvas.width = graphCanvas.parentElement.clientWidth - 30;
+            graphCanvas.height = 100;
+            renderGraph();
         }
-    });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeGraph();
+        });
+        setTimeout(resizeGraph, 100);
 
-    // B. Correct Model Position (Ensure it is on the ground)
-    const box = new THREE.Box3().setFromObject(carModel);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    carModel.position.set(-center.x, -box.min.y, -center.z); // Center horizontally, put bottom at y=0
+        // --- Math Interpolator (Spline Generation) ---
+        function getInterpolatedState(tValue) {
+            if (keyframes.length === 0) return { x: 0, y: 2, z: 6, fov: 50 };
+            
+            // Sort keys chronologically
+            keyframes.sort((a,b) => a.t - b.t);
+            
+            // Boundary capping
+            if (tValue <= keyframes[0].t) return keyframes[0];
+            if (tValue >= keyframes[keyframes.length - 1].t) return keyframes[keyframes.length - 1];
 
-    scene.add(carModel);
+            // Discover bounding neighbors
+            let i = 0;
+            while (i < keyframes.length - 1 && keyframes[i+1].t < tValue) i++;
 
-    // C. Define and Initialize the Camera Animation
-    setupCameraAnimation();
-});
+            const k1 = keyframes[i];
+            const k2 = keyframes[i+1];
+            const alpha = (tValue - k1.t) / (k2.t - k1.t);
 
-// 4. Create the Camera Path Animation Clip
-function setupCameraAnimation() {
-    // Defines *where* the camera is. 
-    // Format: [TimeInSeconds, posX, posY, posZ, TimeInSeconds, posX, posY, posZ, ...]
-    // Times are cumulative.
-    const positionTrack = new THREE.KeyframeTrack('.position', [
-        0.0, 0, 5, 12,    // START: Wide, high angle
-        3.0, 0, 1.5, 4,   // 1. Zoom in: Closer, lower front
-        4.0, 0, 1.0, 2.8, // Hold on Bonnet (slight advance)
-        7.0, -8, 0.8, 1,  // 2. Left Side
-        10.0, 8, 0.8, 1,  // 3. Right Side
-        13.0, 0, 1.2, -6, // 4. Back (centered)
-        16.0, -2, 0.8, -5.5, // 5. Left Back Side
-        19.0, 2, 0.8, -5.5,  // 6. Right Back Side
-        22.0, 0, 5, 12    // LOOP back to start
-    ], [
-        0, 5, 12,
-        0, 1.5, 4,
-        0, 1.0, 2.8,
-        -8, 0.8, 1,
-        8, 0.8, 1,
-        0, 1.2, -6,
-        -2, 0.8, -5.5,
-        2, 0.8, -5.5,
-        0, 5, 12
-    ]);
+            // Use smooth hermite/bezier blend step
+            const p = 3 * Math.pow(alpha, 2) - 2 * Math.pow(alpha, 3);
 
-    // Optional: Defines *what* the camera is looking at. (Smoothing 'LookAt')
-    // Generally, targeting the center of the car works well, so we might just lookAt(0,0,0) constantly,
-    // but a subtle track adds sophistication.
-    const targetTrack = new THREE.KeyframeTrack('.quaternion', [0, 22], [
-        camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w,
-        camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w
-    ]);
-    // NOTE: Generating smooth quaternions for complex paths via Keyframes is difficult.
-    // For this use case, we will rely on `.lookAt()` during the render loop rather than a Quaternion track.
+            return {
+                x: THREE.MathUtils.lerp(k1.x, k2.x, p),
+                y: THREE.MathUtils.lerp(k1.y, k2.y, p),
+                z: THREE.MathUtils.lerp(k1.z, k2.z, p),
+                fov: THREE.MathUtils.lerp(k1.fov, k2.fov, p)
+            };
+        }
 
-    // Combine tracks into a seamless loop
-    const clip = new THREE.AnimationClip('CarStudioShowcase', 22, [positionTrack]);
-    const mixer = new THREE.AnimationMixer(camera);
-    const action = mixer.clipAction(clip);
-    action.setLoop(THREE.LoopRepeat);
-    action.play();
+        // --- Transform State Updates ---
+        function updateTimelineFromInputs() {
+            const t = parseFloat(timeSlider.value);
+            const state = getInterpolatedState(t);
+            
+            if (!isPlaying) {
+                camera.position.set(state.x, state.y, state.z);
+                camera.fov = state.fov;
+                camera.updateProjectionMatrix();
+                
+                uiX.value = state.x.toFixed(2);
+                uiY.value = state.y.toFixed(2);
+                uiZ.value = state.z.toFixed(2);
+                uiFOV.value = Math.round(state.fov);
+            }
+            timeLabel.innerText = `Time: ${(t/10).toFixed(2)}s`;
+            renderGraph();
+            updateKeyframeUI();
+        }
 
-    // Assign back to the global scope variable so the render loop can access it
-    window.animationMixer = mixer;
-}
+        function forceUIValuesToCamera() {
+            if (isPlaying) return;
+            camera.position.set(parseFloat(uiX.value), parseFloat(uiY.value), parseFloat(uiZ.value));
+            camera.fov = parseFloat(uiFOV.value);
+            camera.updateProjectionMatrix();
+        }
 
-// 5. Render Loop
-const clock = new THREE.Clock();
-const carTarget = new THREE.Vector3(0, 0.5, 0); // Focus point (front bumper/hood height)
+        // --- Event Binder Layout ---
+        [uiX, uiY, uiZ, uiFOV].forEach(input => input.addEventListener('input', forceUIValuesToCamera));
+        timeSlider.addEventListener('input', updateTimelineFromInputs);
 
-function animate() {
-    requestAnimationFrame(animate);
+        document.getElementById('btn-add').addEventListener('click', () => {
+            const currentT = parseFloat(timeSlider.value);
+            // Delete keyframe if it already exists on this frame to overwrite it
+            keyframes = keyframes.filter(k => k.t !== currentT);
+            
+            keyframes.push({
+                t: currentT,
+                x: parseFloat(uiX.value),
+                y: parseFloat(uiY.value),
+                z: parseFloat(uiZ.value),
+                fov: parseFloat(uiFOV.value)
+            });
+            updateTimelineFromInputs();
+        });
 
-    if (window.animationMixer) {
-        // Update the animation mixer with the time delta
-        window.animationMixer.update(clock.getDelta());
-    }
+        document.getElementById('btn-del').addEventListener('click', () => {
+            const currentT = parseFloat(timeSlider.value);
+            keyframes = keyframes.filter(k => k.t !== currentT);
+            updateTimelineFromInputs();
+        });
 
-    // Force the camera to always focus on the same central point, 
-    // smoothing the rotation even as the position track moves wildly.
-    camera.lookAt(carTarget);
+        const btnPlay = document.getElementById('btn-play');
+        btnPlay.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            btnPlay.innerText = isPlaying ? "Pause Sequence" : "Play Sequence";
+            if(isPlaying && playProgress >= 100) playProgress = 0;
+        });
 
-    renderer.render(scene, camera);
-}
+        // --- Render UI Updates ---
+        function updateKeyframeUI() {
+            kfListContainer.innerHTML = '';
+            keyframes.sort((a,b) => a.t - b.t).forEach(kf => {
+                const tag = document.createElement('div');
+                tag.className = `kf-tag ${kf.t === parseFloat(timeSlider.value) ? 'active' : ''}`;
+                tag.innerText = `F:${kf.t}`;
+                tag.addEventListener('click', () => {
+                    timeSlider.value = kf.t;
+                    updateTimelineFromInputs();
+                });
+                kfListContainer.appendChild(tag);
+            });
+        }
 
-// Handle Window Resize
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+        function renderGraph() {
+            gCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            const w = graphCanvas.width;
+            const h = graphCanvas.height;
 
-// Start the loop
-animate();
+            // Draw center reference horizon line
+            gCtx.strokeStyle = '#eee';
+            gCtx.beginPath(); gCtx.moveTo(0, h/2); gCtx.lineTo(w, h/2); gCtx.stroke();
+
+            // Trace spatial curves (normalized coordinate bounds scaling)
+            const drawCurve = (prop, color) => {
+                gCtx.strokeStyle = color;
+                gCtx.beginPath();
+                for (let xPixel = 0; xPixel < w; xPixel++) {
+                    const tVal = (xPixel / w) * 100;
+                    const state = getInterpolatedState(tVal);
+                    const yPixel = (h / 2) - (state[prop] * 8); // Scale multiplier for screen visual fit
+                    if (xPixel === 0) gCtx.moveTo(xPixel, yPixel);
+                    else gCtx.lineTo(xPixel, yPixel);
+                }
+                gCtx.stroke();
+            };
+
+            drawCurve('x', '#ff4444');
+            drawCurve('y', '#00c853');
+            drawCurve('z', '#0091ea');
+
+            // Draw current time playhead marker bar
+            const curX = (parseFloat(timeSlider.value) / 100) * w;
+            gCtx.strokeStyle = '#111111';
+            gCtx.lineWidth = 1.5;
+            gCtx.beginPath(); gCtx.moveTo(curX, 0); gCtx.lineTo(curX, h); gCtx.stroke();
+            gCtx.lineWidth = 1;
+        }
+
+        // --- Main Execution Animation Cycle Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isPlaying) {
+                playProgress += clock.getDelta() * 12; // Controls playback playback speed rate
+                if (playProgress > 100) playProgress = 0; // Infinite loop sequence
+                
+                timeSlider.value = playProgress;
+                timeLabel.innerText = `Time: ${(playProgress/10).toFixed(2)}s`;
+                
+                const state = getInterpolatedState(playProgress);
+                camera.position.set(state.x, state.y, state.z);
+                camera.fov = state.fov;
+                camera.updateProjectionMatrix();
+                
+                renderGraph();
+            }
+
+            camera.lookAt(carTarget);
+            renderer.render(scene, camera);
+        }
+
+        // Initial setup execution triggers
+        updateTimelineFromInputs();
+        animate();
     </script>
 </body>
 </html>
