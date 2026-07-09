@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+<style>
+body {
+    margin:0;
+    background:#000;
+}
+#player {
+    width:100%;
+    height:600px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="player"></div>
+
+<script>
+
+const art = new Artplayer({
+
+    container:'#player',
+
+    url:'https://ia601509.us.archive.org/21/items/one-piece-adventure-of-nebulandia_202607/One_Piece_Adventure_of_Nebulandia_1080P.mp4',
+
+    subtitle:{
+        url:'https://raw.githubusercontent.com/Csing102/Wattz/refs/heads/main/One%20Piece%20-%20Adventure%20Of%20Nebulandia.vtt',
+        style:{
+            color:'#fff'
+        }
+    },
+
+    fullscreen:true,
+    autoSize:true
+});
+
+</script>
+
+</body>
+</html>
